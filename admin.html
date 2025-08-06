@@ -1,0 +1,508 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MOCHA | Admin Panel</title>
+  <script type="module" src="/js/firebase-config.js"></script>
+  <script type="module" src="/js/admin.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #3285BB;
+      --primary-light: #4da1e0;
+      --secondary: #eebe20;
+      --secondary-light: #ffd95e;
+      --text-dark: #2d3748;
+      --text-medium: #4a5568;
+      --text-light: #718096;
+      --bg-light: #f8fafc;
+      --border: #e2e8f0;
+      --success: #38a169;
+      --warning: #dd6b20;
+      --error: #e53e3e;
+      --completed: #bac1c8;
+      --current: #3285BB;
+      --next: #eebe20;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      background: #f4f6f8;
+      color: var(--text-dark);
+      line-height: 1.6;
+    }
+
+    .wrapper {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background-color: var(--primary);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    .footer {
+      background: var(--primary);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-weight: bold;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+      margin-top: auto;
+    }
+
+    .nav {
+      background: var(--secondary);
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .nav a {
+      text-decoration: none;
+      color: var(--primary);
+      font-weight: 600;
+      font-family: 'Montserrat', sans-serif;
+      transition: color 0.3s;
+    }
+
+    .nav a:hover {
+      color: white;
+    }
+
+    .main-content {
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .panel {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 800px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: var(--primary);
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 12px 15px;
+      margin-bottom: 15px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      transition: border-color 0.3s;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(50, 133, 187, 0.2);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .form-row > * {
+      flex: 1;
+    }
+
+    .step-group {
+      border: 1px solid var(--border);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      background: #f8fafc;
+    }
+
+    .step-group label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 5px;
+      color: var(--primary);
+    }
+
+    button {
+      background: var(--secondary);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      margin-top: 10px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      background: var(--secondary-light);
+      transform: translateY(-2px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-light);
+    }
+
+    .btn-danger {
+      background: var(--error);
+    }
+
+    .btn-danger:hover {
+      background: #c53030;
+    }
+
+    .step-controls {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .hidden { 
+      display: none; 
+    }
+
+    .message {
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    .success {
+      background-color: rgba(56, 161, 105, 0.1);
+      color: var(--success);
+      border: 1px solid rgba(56, 161, 105, 0.3);
+    }
+
+    .error {
+      background-color: rgba(229, 62, 62, 0.1);
+      color: var(--error);
+      border: 1px solid rgba(229, 62, 62, 0.3);
+    }
+
+    .order-details-container {
+      margin-top: 20px;
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 8px;
+      border-left: 3px solid var(--primary);
+    }
+
+    .order-detail-row {
+      display: flex;
+      margin-bottom: 10px;
+    }
+
+    .order-detail-label {
+      font-weight: 600;
+      color: var(--text-medium);
+      min-width: 150px;
+    }
+
+    .order-detail-value {
+      color: var(--text-dark);
+    }
+
+    @media (max-width: 768px) {
+      .form-row {
+        flex-direction: column;
+        gap: 0;
+      }
+      
+      .panel {
+        padding: 20px;
+      }
+      
+      .order-detail-row {
+        flex-direction: column;
+      }
+      
+      .order-detail-label {
+        min-width: auto;
+        margin-bottom: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <header class="header">MOCHA AUTHENTIC SHOP - Admin Panel</header>
+    <div class="nav">
+      <div class="nav-links">
+        <a href="index.html"><i class="fas fa-home"></i> Home</a>
+        <a href="tracking.html"><i class="fas fa-truck"></i> Tracking</a>
+      </div>
+    </div>
+
+    <main class="main-content">
+      <div class="panel" id="loginPanel">
+        <h2>Admin Login</h2>
+        <div id="loginMessage" class="message hidden"></div>
+        <input type="text" id="adminUser" placeholder="Username" />
+        <input type="password" id="adminPass" placeholder="Password" />
+        <button class="btn-primary" onclick="login()">Login</button>
+      </div>
+
+      <div class="panel hidden" id="trackingPanel">
+        <h2>Edit Order Tracking</h2>
+        <div id="trackingMessage" class="message hidden"></div>
+        
+        <div class="form-row">
+          <div>
+            <label for="trackingID">Tracking Number</label>
+            <input type="text" id="trackingID" placeholder="e.g., MOCHA001" />
+          </div>
+          <div>
+            <label for="orderStatus">Order Status</label>
+            <select id="orderStatus">
+              <option value="Processing">Processing</option>
+              <option value="In Transit">In Transit</option>
+              <option value="Delivered">Delivered</option>
+            </select>
+          </div>
+        </div>
+        
+        <button class="btn-primary" onclick="loadOrder()">Load Order</button>
+
+        <div id="orderEditor" class="hidden">
+          <div class="form-group">
+            <h3>Order Details</h3>
+            <div class="form-row">
+              <div>
+                <label for="customerName">Customer Name</label>
+                <input type="text" id="customerName" placeholder="Customer Name" />
+              </div>
+              <div>
+                <label for="packageCount">Package Count</label>
+                <input type="text" id="packageCount" placeholder="e.g., 1 package" />
+              </div>
+            </div>
+            
+            <label for="orderDetails">Order Items</label>
+            <textarea id="orderDetails" placeholder="List of ordered items (e.g., 1x Handbag, 2x Sunglasses)"></textarea>
+            
+            <label for="deliveryDate">Estimated Delivery</label>
+            <input type="text" id="deliveryDate" placeholder="e.g., June 18, 2025" />
+          </div>
+
+          <div class="form-group">
+            <h3>Tracking Steps</h3>
+            <div id="stepsContainer"></div>
+            <button onclick="addStep()"><i class="fas fa-plus"></i> Add Step</button>
+          </div>
+
+          <div class="step-controls">
+            <button class="btn-primary" onclick="saveOrder()"><i class="fas fa-save"></i> Save Order</button>
+            <button class="btn-danger" onclick="resetForm()"><i class="fas fa-undo"></i> Reset</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">&copy; 2025 MOCHA AUTHENTIC SHOP. All rights reserved.</footer>
+  </div>
+
+  <script>
+    // Admin Panel Logic
+    function showMessage(elementId, message, isSuccess) {
+      const msgElement = document.getElementById(elementId);
+      msgElement.textContent = message;
+      msgElement.className = isSuccess ? 'message success' : 'message error';
+      msgElement.classList.remove('hidden');
+      setTimeout(() => msgElement.classList.add('hidden'), 3000);
+    }
+
+    function login() {
+      const user = document.getElementById("adminUser").value.trim();
+      const pass = document.getElementById("adminPass").value.trim();
+
+      if (user === "admin" && pass === "mocha2025") {
+        document.getElementById("loginPanel").classList.add("hidden");
+        document.getElementById("trackingPanel").classList.remove("hidden");
+        showMessage('loginMessage', 'Login successful!', true);
+      } else {
+        showMessage('loginMessage', 'Invalid username or password.', false);
+      }
+    }
+
+    function loadOrder() {
+      const trackingID = document.getElementById("trackingID").value.trim().toUpperCase();
+      if (!trackingID) {
+        showMessage('trackingMessage', 'Please enter a tracking number', false);
+        return;
+      }
+
+      const savedData = localStorage.getItem("mocha_order_" + trackingID);
+      if (savedData) {
+        const orderData = JSON.parse(savedData);
+        
+        // Populate basic info
+        document.getElementById("customerName").value = orderData.customerName || "";
+        document.getElementById("packageCount").value = orderData.packageCount || "";
+        document.getElementById("orderDetails").value = orderData.orderDetails || "";
+        document.getElementById("deliveryDate").value = orderData.deliveryDate || "";
+        document.getElementById("orderStatus").value = orderData.currentStatus || "Processing";
+        
+        // Populate steps
+        const stepsContainer = document.getElementById("stepsContainer");
+        stepsContainer.innerHTML = "";
+        
+        if (orderData.steps && orderData.steps.length > 0) {
+          orderData.steps.forEach(step => {
+            addStep(step.status, step.time, step.details);
+          });
+        } else {
+          addStep(); // Add one empty step if no steps exist
+        }
+        
+        document.getElementById("orderEditor").classList.remove("hidden");
+        showMessage('trackingMessage', 'Order loaded successfully!', true);
+      } else {
+        // Initialize new order
+        document.getElementById("customerName").value = "";
+        document.getElementById("packageCount").value = "1 package";
+        document.getElementById("orderDetails").value = "";
+        document.getElementById("deliveryDate").value = "";
+        document.getElementById("orderStatus").value = "Processing";
+        
+        const stepsContainer = document.getElementById("stepsContainer");
+        stepsContainer.innerHTML = "";
+        addStep(); // Start with one empty step
+        
+        document.getElementById("orderEditor").classList.remove("hidden");
+        showMessage('trackingMessage', 'New order initialized. Fill in details and save.', true);
+      }
+    }
+
+    function addStep(status = "", time = "", details = "") {
+      const stepsContainer = document.getElementById("stepsContainer");
+      const stepNumber = stepsContainer.children.length + 1;
+      
+      const stepGroup = document.createElement("div");
+      stepGroup.className = "step-group";
+      stepGroup.innerHTML = `
+        <label>Step ${stepNumber}</label>
+        <div class="form-row">
+          <div>
+            <label>Status</label>
+            <input type="text" class="step-status" placeholder="e.g., Shipped" value="${status}">
+          </div>
+          <div>
+            <label>Date/Time</label>
+            <input type="text" class="step-time" placeholder="e.g., June 14, 2025 11:20 AM" value="${time}">
+          </div>
+        </div>
+        <label>Details</label>
+        <textarea class="step-details" placeholder="Step details...">${details}</textarea>
+        <button class="btn-danger" onclick="removeStep(this)"><i class="fas fa-trash"></i> Remove Step</button>
+      `;
+      stepsContainer.appendChild(stepGroup);
+    }
+
+    function removeStep(button) {
+      const stepGroup = button.closest('.step-group');
+      stepGroup.remove();
+      
+      // Re-number the remaining steps
+      const steps = document.querySelectorAll('.step-group');
+      steps.forEach((step, index) => {
+        step.querySelector('label').textContent = `Step ${index + 1}`;
+      });
+    }
+
+    function saveOrder() {
+      const trackingID = document.getElementById("trackingID").value.trim().toUpperCase();
+      if (!trackingID) {
+        showMessage('trackingMessage', 'Please enter a tracking number', false);
+        return;
+      }
+
+      // Collect all steps
+      const steps = [];
+      const stepGroups = document.querySelectorAll('.step-group');
+      
+      stepGroups.forEach(group => {
+        steps.push({
+          status: group.querySelector('.step-status').value,
+          time: group.querySelector('.step-time').value,
+          details: group.querySelector('.step-details').value
+        });
+      });
+
+      if (steps.length === 0) {
+        showMessage('trackingMessage', 'Please add at least one tracking step', false);
+        return;
+      }
+
+      // Create order data object
+      const orderData = {
+        trackingNumber: trackingID,
+        currentStatus: document.getElementById("orderStatus").value,
+        customerName: document.getElementById("customerName").value,
+        packageCount: document.getElementById("packageCount").value,
+        orderDetails: document.getElementById("orderDetails").value,
+        deliveryDate: document.getElementById("deliveryDate").value,
+        steps: steps
+      };
+
+      // Save to localStorage
+      localStorage.setItem("mocha_order_" + trackingID, JSON.stringify(orderData));
+      showMessage('trackingMessage', 'Order saved successfully!', true);
+    }
+
+    function resetForm() {
+      if (confirm('Are you sure you want to reset all changes?')) {
+        document.getElementById("orderEditor").classList.add("hidden");
+        document.getElementById("trackingID").value = "";
+        showMessage('trackingMessage', 'Form reset. Enter a tracking number to continue.', true);
+      }
+    }
+  </script>
+</body>
+</html>
