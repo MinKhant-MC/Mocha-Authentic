@@ -99,7 +99,7 @@
       border-radius: 15px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       width: 100%;
-      max-width: 800px;
+      max-width: 900px;
     }
 
     h2 {
@@ -237,6 +237,103 @@
       margin: 0 auto 10px;
     }
 
+    .datetime-input {
+      display: flex;
+      gap: 10px;
+    }
+
+    .datetime-input input {
+      margin-bottom: 0;
+    }
+
+    .date-input {
+      flex: 2;
+    }
+
+    .time-input {
+      flex: 1;
+    }
+
+    .progress-preview {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8fafc;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .progress-steps-preview {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin: 30px 0;
+      padding: 0 20px;
+    }
+
+    .progress-steps-preview::before {
+      content: '';
+      position: absolute;
+      top: 15px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background-color: var(--border);
+      z-index: 1;
+    }
+
+    .progress-fill-preview {
+      content: '';
+      position: absolute;
+      top: 15px;
+      left: 0;
+      height: 3px;
+      background: var(--success);
+      z-index: 2;
+      transition: width 1s ease-in-out;
+    }
+
+    .step-preview {
+      position: relative;
+      flex: 1;
+      text-align: center;
+      z-index: 3;
+    }
+
+    .step-marker-preview {
+      width: 30px;
+      height: 30px;
+      background-color: var(--border);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto;
+      font-size: 12px;
+      transition: all 0.3s;
+    }
+
+    .step-preview.completed .step-marker-preview {
+      background-color: var(--success);
+    }
+
+    .step-preview.active .step-marker-preview {
+      background-color: var(--primary);
+      transform: scale(1.1);
+    }
+
+    .step-label-preview {
+      font-size: 10px;
+      margin-top: 5px;
+      color: var(--text-medium);
+    }
+
+    .timer-display {
+      font-size: 12px;
+      color: var(--text-light);
+      margin-top: 3px;
+    }
+
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -250,6 +347,10 @@
       
       .panel {
         padding: 20px;
+      }
+      
+      .datetime-input {
+        flex-direction: column;
       }
     }
   </style>
@@ -312,13 +413,20 @@
             <textarea id="orderDetails" placeholder="List of ordered items"></textarea>
             
             <label for="deliveryDate">Estimated Delivery</label>
-            <input type="text" id="deliveryDate" placeholder="e.g., June 18, 2025" />
+            <input type="date" id="deliveryDate" />
           </div>
 
           <div class="form-group">
             <h3>Tracking Steps</h3>
             <div id="stepsContainer"></div>
             <button onclick="addStep()"><i class="fas fa-plus"></i> Add Step</button>
+            
+            <div class="progress-preview">
+              <h4>Progress Preview</h4>
+              <div class="progress-steps-preview" id="progressStepsPreview">
+                <div class="progress-fill-preview" id="progressFillPreview"></div>
+              </div>
+            </div>
           </div>
 
           <div class="step-controls">
@@ -338,8 +446,8 @@
   </div>
 
   <script>
-    // ✅ UPDATED GOOGLE APPS SCRIPT URL
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwhQskbfKW9xzRnPLgAhBcm2evIuF-7kVAUBsfnzfZeusRZo3pKrSY96f2MYm7_6Bge/exec';
+    let stepTimers = {};
 
     function showMessage(elementId, message, isSuccess) {
       const msgElement = document.getElementById(elementId);
@@ -364,6 +472,153 @@
       } else {
         showMessage('loginMessage', 'Invalid username or password.', false);
       }
+    }
+
+    // Easy date/time functions
+    function getCurrentDateTime() {
+      const now = new Date();
+      const date = now.toISOString().split('T')[0];
+      const time = now.toTimeString().split(' ')[0].substring(0, 5);
+      return { date, time };
+    }
+
+    function formatDateTime(date, time) {
+      const dateObj = new Date(`${date}T${time}`);
+      return dateObj.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function addStep(status = "", date = "", time = "", details = "") {
+      const stepsContainer = document.getElementById("stepsContainer");
+      const stepNumber = stepsContainer.children.length + 1;
+      
+      // Set default values
+      if (!date && !time) {
+        const current = getCurrentDateTime();
+        date = current.date;
+        time = current.time;
+      }
+      
+      if (!status) {
+        const defaultStatuses = [
+          "Order Received", "Processing", "Quality Check", 
+          "Ready for Shipment", "In Transit", "Out for Delivery", "Delivered"
+        ];
+        status = defaultStatuses[stepNumber - 1] || "Processing";
+      }
+
+      const stepGroup = document.createElement("div");
+      stepGroup.className = "step-group";
+      stepGroup.innerHTML = `
+        <label>Step ${stepNumber}</label>
+        <div class="form-row">
+          <div>
+            <label>Status</label>
+            <input type="text" class="step-status" placeholder="e.g., Order Received" value="${status}">
+          </div>
+          <div class="datetime-input">
+            <div class="date-input">
+              <label>Date</label>
+              <input type="date" class="step-date" value="${date}">
+            </div>
+            <div class="time-input">
+              <label>Time</label>
+              <input type="time" class="step-time" value="${time}">
+            </div>
+          </div>
+        </div>
+        <label>Details</label>
+        <textarea class="step-details" placeholder="Step details...">${details}</textarea>
+        <div class="form-row">
+          <button class="btn-danger" onclick="removeStep(this)"><i class="fas fa-trash"></i> Remove Step</button>
+          <button class="btn-primary" onclick="setCurrentTime(this)"><i class="fas fa-clock"></i> Set Current Time</button>
+        </div>
+      `;
+      stepsContainer.appendChild(stepGroup);
+      updateProgressPreview();
+    }
+
+    function setCurrentTime(button) {
+      const stepGroup = button.closest('.step-group');
+      const current = getCurrentDateTime();
+      stepGroup.querySelector('.step-date').value = current.date;
+      stepGroup.querySelector('.step-time').value = current.time;
+      updateProgressPreview();
+    }
+
+    function removeStep(button) {
+      const stepGroup = button.closest('.step-group');
+      stepGroup.remove();
+      updateStepNumbers();
+      updateProgressPreview();
+    }
+
+    function updateStepNumbers() {
+      const steps = document.querySelectorAll('.step-group');
+      steps.forEach((step, index) => {
+        step.querySelector('label').textContent = `Step ${index + 1}`;
+      });
+    }
+
+    function updateProgressPreview() {
+      const stepsContainer = document.getElementById("stepsContainer");
+      const progressSteps = document.getElementById("progressStepsPreview");
+      const progressFill = document.getElementById("progressFillPreview");
+      
+      progressSteps.innerHTML = '<div class="progress-fill-preview" id="progressFillPreview"></div>';
+      
+      const stepGroups = document.querySelectorAll('.step-group');
+      const currentTime = new Date();
+      let activeStepIndex = -1;
+      let completedSteps = 0;
+
+      stepGroups.forEach((group, index) => {
+        const date = group.querySelector('.step-date').value;
+        const time = group.querySelector('.step-time').value;
+        
+        if (date && time) {
+          const stepDateTime = new Date(`${date}T${time}`);
+          if (currentTime >= stepDateTime) {
+            completedSteps++;
+          } else if (activeStepIndex === -1) {
+            activeStepIndex = index;
+          }
+        }
+
+        const stepElement = document.createElement("div");
+        stepElement.className = "step-preview";
+        
+        if (date && time) {
+          const stepDateTime = new Date(`${date}T${time}`);
+          if (currentTime >= stepDateTime) {
+            stepElement.classList.add("completed");
+          } else if (index === activeStepIndex) {
+            stepElement.classList.add("active");
+          }
+        }
+
+        const marker = document.createElement("div");
+        marker.className = "step-marker-preview";
+        marker.textContent = index + 1;
+
+        const label = document.createElement("div");
+        label.className = "step-label-preview";
+        const status = group.querySelector('.step-status').value || `Step ${index + 1}`;
+        label.textContent = status.length > 12 ? status.substring(0, 12) + '...' : status;
+
+        stepElement.appendChild(marker);
+        stepElement.appendChild(label);
+        progressSteps.appendChild(stepElement);
+      });
+
+      // Update progress bar
+      const progressPercent = stepGroups.length > 0 ? (completedSteps / stepGroups.length) * 100 : 0;
+      progressFill.style.width = `${progressPercent}%`;
     }
 
     async function loadOrder() {
@@ -407,7 +662,10 @@
           
           if (result.steps && result.steps.length > 0) {
             result.steps.forEach(step => {
-              addStep(step.status, step.time, step.details);
+              const stepDate = new Date(step.time);
+              const date = stepDate.toISOString().split('T')[0];
+              const time = stepDate.toTimeString().split(' ')[0].substring(0, 5);
+              addStep(step.status, date, time, step.details);
             });
           } else {
             addStep(); // Add one empty step if no steps exist
@@ -423,42 +681,6 @@
       }
     }
 
-    function addStep(status = "", time = "", details = "") {
-      const stepsContainer = document.getElementById("stepsContainer");
-      const stepNumber = stepsContainer.children.length + 1;
-      
-      const stepGroup = document.createElement("div");
-      stepGroup.className = "step-group";
-      stepGroup.innerHTML = `
-        <label>Step ${stepNumber}</label>
-        <div class="form-row">
-          <div>
-            <label>Status</label>
-            <input type="text" class="step-status" placeholder="e.g., Order Received" value="${status}">
-          </div>
-          <div>
-            <label>Date/Time</label>
-            <input type="text" class="step-time" placeholder="e.g., June 14, 2025 11:20 AM" value="${time}">
-          </div>
-        </div>
-        <label>Details</label>
-        <textarea class="step-details" placeholder="Step details...">${details}</textarea>
-        <button class="btn-danger" onclick="removeStep(this)"><i class="fas fa-trash"></i> Remove Step</button>
-      `;
-      stepsContainer.appendChild(stepGroup);
-    }
-
-    function removeStep(button) {
-      const stepGroup = button.closest('.step-group');
-      stepGroup.remove();
-      
-      // Re-number the remaining steps
-      const steps = document.querySelectorAll('.step-group');
-      steps.forEach((step, index) => {
-        step.querySelector('label').textContent = `Step ${index + 1}`;
-      });
-    }
-
     async function saveOrder() {
       const trackingID = document.getElementById("trackingID").value.trim().toUpperCase();
       if (!trackingID) {
@@ -472,39 +694,40 @@
       
       stepGroups.forEach(group => {
         const status = group.querySelector('.step-status').value.trim();
-        const time = group.querySelector('.step-time').value.trim();
+        const date = group.querySelector('.step-date').value;
+        const time = group.querySelector('.step-time').value;
         const details = group.querySelector('.step-details').value.trim();
         
-        if (status && time) {
+        if (status && date && time) {
+          const formattedTime = formatDateTime(date, time);
           steps.push({
             status: status,
-            time: time,
+            time: formattedTime,
             details: details
           });
         }
       });
 
       if (steps.length === 0) {
-        showMessage('trackingMessage', 'Please add at least one tracking step', false);
+        showMessage('trackingMessage', 'Please add at least one tracking step with date and time', false);
         return;
       }
 
-      // Prepare order data - MATCHING GOOGLE SHEETS COLUMN NAMES
+      // Prepare order data
       const orderData = {
-        trackingID: trackingID,  // Column A
-        currentStatus: document.getElementById("orderStatus").value,  // Column B
-        estimatedDelivery: document.getElementById("deliveryDate").value.trim(),  // Column C
-        customerName: document.getElementById("customerName").value.trim(),  // Column D
-        orderDetails: document.getElementById("orderDetails").value.trim(),  // Column E
-        packageCount: document.getElementById("packageCount").value.trim(),  // Column F
-        steps: JSON.stringify(steps),  // Column G
-        lastUpdated: new Date().toLocaleString()  // Column H
+        trackingID: trackingID,
+        currentStatus: document.getElementById("orderStatus").value,
+        estimatedDelivery: document.getElementById("deliveryDate").value.trim(),
+        customerName: document.getElementById("customerName").value.trim(),
+        packageCount: document.getElementById("packageCount").value.trim(),
+        orderDetails: document.getElementById("orderDetails").value.trim(),
+        steps: JSON.stringify(steps),
+        lastUpdated: new Date().toLocaleString()
       };
 
       showLoading(true);
       
       try {
-        // Build URL with parameters
         const params = new URLSearchParams();
         params.append('action', 'saveOrder');
         Object.keys(orderData).forEach(key => {
@@ -538,7 +761,15 @@
       }
     }
 
-    // Enter key support
+    // Event listeners for real-time updates
+    document.addEventListener('input', function(e) {
+      if (e.target.classList.contains('step-date') || 
+          e.target.classList.contains('step-time') || 
+          e.target.classList.contains('step-status')) {
+        updateProgressPreview();
+      }
+    });
+
     document.getElementById('trackingID').addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
         loadOrder();
