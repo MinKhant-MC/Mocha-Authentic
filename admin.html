@@ -1,10 +1,9 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MOCHA | Admin Panel</title>
-  <script type="module" src="/js/firebase-config.js"></script>
-  <script type="module" src="/js/admin.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
@@ -21,9 +20,6 @@
       --success: #38a169;
       --warning: #dd6b20;
       --error: #e53e3e;
-      --completed: #bac1c8;
-      --current: #3285BB;
-      --next: #eebe20;
     }
 
     * {
@@ -226,27 +222,24 @@
       border: 1px solid rgba(229, 62, 62, 0.3);
     }
 
-    .order-details-container {
-      margin-top: 20px;
-      background: #f8fafc;
+    .loading {
+      text-align: center;
       padding: 20px;
-      border-radius: 8px;
-      border-left: 3px solid var(--primary);
     }
 
-    .order-detail-row {
-      display: flex;
-      margin-bottom: 10px;
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 2s linear infinite;
+      margin: 0 auto 10px;
     }
 
-    .order-detail-label {
-      font-weight: 600;
-      color: var(--text-medium);
-      min-width: 150px;
-    }
-
-    .order-detail-value {
-      color: var(--text-dark);
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     @media (max-width: 768px) {
@@ -258,15 +251,6 @@
       .panel {
         padding: 20px;
       }
-      
-      .order-detail-row {
-        flex-direction: column;
-      }
-      
-      .order-detail-label {
-        min-width: auto;
-        margin-bottom: 5px;
-      }
     }
   </style>
 </head>
@@ -275,8 +259,7 @@
     <header class="header">MOCHA AUTHENTIC SHOP - Admin Panel</header>
     <div class="nav">
       <div class="nav-links">
-        <a href="index.html"><i class="fas fa-home"></i> Home</a>
-        <a href="tracking.html"><i class="fas fa-truck"></i> Tracking</a>
+        <a href="tracking.html"><i class="fas fa-truck"></i> Tracking Page</a>
       </div>
     </div>
 
@@ -303,6 +286,7 @@
             <select id="orderStatus">
               <option value="Processing">Processing</option>
               <option value="In Transit">In Transit</option>
+              <option value="Out for Delivery">Out for Delivery</option>
               <option value="Delivered">Delivered</option>
             </select>
           </div>
@@ -325,7 +309,7 @@
             </div>
             
             <label for="orderDetails">Order Items</label>
-            <textarea id="orderDetails" placeholder="List of ordered items (e.g., 1x Handbag, 2x Sunglasses)"></textarea>
+            <textarea id="orderDetails" placeholder="List of ordered items"></textarea>
             
             <label for="deliveryDate">Estimated Delivery</label>
             <input type="text" id="deliveryDate" placeholder="e.g., June 18, 2025" />
@@ -342,12 +326,223 @@
             <button class="btn-danger" onclick="resetForm()"><i class="fas fa-undo"></i> Reset</button>
           </div>
         </div>
+
+        <div id="loading" class="loading hidden">
+          <div class="spinner"></div>
+          <p>Loading...</p>
+        </div>
       </div>
     </main>
 
     <footer class="footer">&copy; 2025 MOCHA AUTHENTIC SHOP. All rights reserved.</footer>
   </div>
 
-</body>
+  <script>
+    // ✅ YOUR ACTUAL GOOGLE APPS SCRIPT URL
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxM6ui1yEzD2mEOYghoQYgIBxtzRN9nDsDtywRdzMl6q4X3bkj_LqN-oMeEmTIUf1rb/exec';
 
+    function showMessage(elementId, message, isSuccess) {
+      const msgElement = document.getElementById(elementId);
+      msgElement.textContent = message;
+      msgElement.className = isSuccess ? 'message success' : 'message error';
+      msgElement.classList.remove('hidden');
+      setTimeout(() => msgElement.classList.add('hidden'), 5000);
+    }
+
+    function showLoading(show) {
+      document.getElementById('loading').classList.toggle('hidden', !show);
+    }
+
+    function login() {
+      const user = document.getElementById("adminUser").value.trim();
+      const pass = document.getElementById("adminPass").value.trim();
+
+      if (user === "admin" && pass === "mocha2025") {
+        document.getElementById("loginPanel").classList.add("hidden");
+        document.getElementById("trackingPanel").classList.remove("hidden");
+        showMessage('loginMessage', 'Login successful!', true);
+      } else {
+        showMessage('loginMessage', 'Invalid username or password.', false);
+      }
+    }
+
+    async function loadOrder() {
+      const trackingID = document.getElementById("trackingID").value.trim().toUpperCase();
+      if (!trackingID) {
+        showMessage('trackingMessage', 'Please enter a tracking number', false);
+        return;
+      }
+
+      showLoading(true);
+      
+      try {
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getOrder&trackingNumber=${trackingID}`);
+        const result = await response.json();
+        
+        if (result.error) {
+          // New order - initialize empty form
+          document.getElementById("customerName").value = "";
+          document.getElementById("packageCount").value = "1 package";
+          document.getElementById("orderDetails").value = "";
+          document.getElementById("deliveryDate").value = "";
+          document.getElementById("orderStatus").value = "Processing";
+          
+          const stepsContainer = document.getElementById("stepsContainer");
+          stepsContainer.innerHTML = "";
+          addStep(); // Start with one empty step
+          
+          document.getElementById("orderEditor").classList.remove("hidden");
+          showMessage('trackingMessage', 'New order. Fill in details and save.', true);
+        } else {
+          // Existing order - populate form
+          document.getElementById("customerName").value = result.customerName || "";
+          document.getElementById("packageCount").value = result.packageCount || "";
+          document.getElementById("orderDetails").value = result.orderDetails || "";
+          document.getElementById("deliveryDate").value = result.estimatedDelivery || "";
+          document.getElementById("orderStatus").value = result.currentStatus || "Processing";
+          
+          // Populate steps
+          const stepsContainer = document.getElementById("stepsContainer");
+          stepsContainer.innerHTML = "";
+          
+          if (result.steps && result.steps.length > 0) {
+            result.steps.forEach(step => {
+              addStep(step.status, step.time, step.details);
+            });
+          } else {
+            addStep(); // Add one empty step if no steps exist
+          }
+          
+          document.getElementById("orderEditor").classList.remove("hidden");
+          showMessage('trackingMessage', 'Order loaded successfully!', true);
+        }
+      } catch (error) {
+        showMessage('trackingMessage', 'Error loading order: ' + error.message, false);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function addStep(status = "", time = "", details = "") {
+      const stepsContainer = document.getElementById("stepsContainer");
+      const stepNumber = stepsContainer.children.length + 1;
+      
+      const stepGroup = document.createElement("div");
+      stepGroup.className = "step-group";
+      stepGroup.innerHTML = `
+        <label>Step ${stepNumber}</label>
+        <div class="form-row">
+          <div>
+            <label>Status</label>
+            <input type="text" class="step-status" placeholder="e.g., Order Received" value="${status}">
+          </div>
+          <div>
+            <label>Date/Time</label>
+            <input type="text" class="step-time" placeholder="e.g., June 14, 2025 11:20 AM" value="${time}">
+          </div>
+        </div>
+        <label>Details</label>
+        <textarea class="step-details" placeholder="Step details...">${details}</textarea>
+        <button class="btn-danger" onclick="removeStep(this)"><i class="fas fa-trash"></i> Remove Step</button>
+      `;
+      stepsContainer.appendChild(stepGroup);
+    }
+
+    function removeStep(button) {
+      const stepGroup = button.closest('.step-group');
+      stepGroup.remove();
+      
+      // Re-number the remaining steps
+      const steps = document.querySelectorAll('.step-group');
+      steps.forEach((step, index) => {
+        step.querySelector('label').textContent = `Step ${index + 1}`;
+      });
+    }
+
+    async function saveOrder() {
+      const trackingID = document.getElementById("trackingID").value.trim().toUpperCase();
+      if (!trackingID) {
+        showMessage('trackingMessage', 'Please enter a tracking number', false);
+        return;
+      }
+
+      // Collect all steps
+      const steps = [];
+      const stepGroups = document.querySelectorAll('.step-group');
+      
+      stepGroups.forEach(group => {
+        const status = group.querySelector('.step-status').value.trim();
+        const time = group.querySelector('.step-time').value.trim();
+        const details = group.querySelector('.step-details').value.trim();
+        
+        if (status && time) {
+          steps.push({
+            status: status,
+            time: time,
+            details: details
+          });
+        }
+      });
+
+      if (steps.length === 0) {
+        showMessage('trackingMessage', 'Please add at least one tracking step', false);
+        return;
+      }
+
+      // Prepare order data
+      const orderData = {
+        trackingNumber: trackingID,
+        currentStatus: document.getElementById("orderStatus").value,
+        customerName: document.getElementById("customerName").value.trim(),
+        packageCount: document.getElementById("packageCount").value.trim(),
+        orderDetails: document.getElementById("orderDetails").value.trim(),
+        estimatedDelivery: document.getElementById("deliveryDate").value.trim(),
+        steps: JSON.stringify(steps)
+      };
+
+      showLoading(true);
+      
+      try {
+        // Build URL with parameters
+        const params = new URLSearchParams();
+        params.append('action', 'saveOrder');
+        Object.keys(orderData).forEach(key => {
+          params.append(key, orderData[key]);
+        });
+
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          body: params
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          showMessage('trackingMessage', 'Order saved successfully to Google Sheets!', true);
+        } else {
+          throw new Error(result.error || 'Failed to save order');
+        }
+      } catch (error) {
+        showMessage('trackingMessage', 'Error saving order: ' + error.message, false);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function resetForm() {
+      if (confirm('Are you sure you want to reset all changes?')) {
+        document.getElementById("orderEditor").classList.add("hidden");
+        document.getElementById("trackingID").value = "";
+        showMessage('trackingMessage', 'Form reset. Enter a tracking number to continue.', true);
+      }
+    }
+
+    // Enter key support
+    document.getElementById('trackingID').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        loadOrder();
+      }
+    });
+  </script>
+</body>
 </html>
