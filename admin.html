@@ -376,7 +376,7 @@
       showLoading(true);
       
       try {
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getOrder&trackingNumber=${trackingID}`);
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getOrder&trackingID=${trackingID}`);
         const result = await response.json();
         
         if (result.error) {
@@ -398,7 +398,7 @@
           document.getElementById("customerName").value = result.customerName || "";
           document.getElementById("packageCount").value = result.packageCount || "";
           document.getElementById("orderDetails").value = result.orderDetails || "";
-          document.getElementById("deliveryDate").value = result.estimatedDelivery || "";
+          document.getElementById("deliveryDate").value = result.estimatedDelive || "";
           document.getElementById("orderStatus").value = result.currentStatus || "Processing";
           
           // Populate steps
@@ -489,15 +489,16 @@
         return;
       }
 
-      // Prepare order data
+      // Prepare order data - MATCHING GOOGLE SHEETS COLUMN NAMES
       const orderData = {
-        trackingNumber: trackingID,
-        currentStatus: document.getElementById("orderStatus").value,
-        customerName: document.getElementById("customerName").value.trim(),
-        packageCount: document.getElementById("packageCount").value.trim(),
-        orderDetails: document.getElementById("orderDetails").value.trim(),
-        estimatedDelivery: document.getElementById("deliveryDate").value.trim(),
-        steps: JSON.stringify(steps)
+        trackingID: trackingID,  // Column A
+        currentStatus: document.getElementById("orderStatus").value,  // Column B
+        estimatedDelivery: document.getElementById("deliveryDate").value.trim(),  // Column C (matching sheet header)
+        customerName: document.getElementById("customerName").value.trim(),  // Column D
+        orderDetails: document.getElementById("orderDetails").value.trim(),  // Column E
+        packageCount: document.getElementById("packageCount").value.trim(),  // Column F
+        steps: JSON.stringify(steps),  // Column G
+        lastUpdated: new Date().toLocaleString()  // Column H
       };
 
       showLoading(true);
@@ -546,5 +547,3 @@
   </script>
 </body>
 </html>
-
-
