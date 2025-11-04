@@ -740,7 +740,7 @@
   </div>
 
   <script>
-    // ✅ UPDATED GOOGLE APPS SCRIPT URL
+    // ✅ UPDATED GOOGLE APPS SCRIPT URL - SAME AS ADMIN PAGE
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwhQskbfKW9xzRnPLgAhBcm2evIuF-7kVAUBsfnzfZeusRZo3pKrSY96f2MYm7_6Bge/exec';
 
     // Mobile menu toggle
@@ -797,15 +797,20 @@
           throw new Error('Please enter a tracking number');
         }
 
-        // ✅ FIXED: Use trackingID parameter instead of trackingNumber
+        // ✅ FIXED: Use same URL and parameters as admin page
         const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getOrder&trackingID=${trackingNumber}`);
+        
+        if (!response.ok) {
+          throw new Error('Network error. Please try again.');
+        }
+        
         const orderData = await response.json();
         
         if (orderData.error) {
           throw new Error('Tracking number not found. Please verify your number or contact support.');
         }
 
-        // ✅ FIXED: Updated column names to match Google Sheets
+        // ✅ FIXED: Updated column names to match Google Sheets exactly
         document.getElementById('orderNumberText').textContent = `Order #${orderData.trackingID}`;
         document.getElementById('orderStatus').textContent = orderData.currentStatus || 'Processing';
         document.getElementById('deliveryDate').textContent = orderData.estimatedDelivery || '-';
@@ -820,7 +825,12 @@
         resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         
       } catch (error) {
-        errorMsg.textContent = error.message;
+        console.error('Tracking error:', error);
+        if (error.message.includes('Failed to fetch')) {
+          errorMsg.textContent = 'Network error: Cannot connect to server. Please check your internet connection.';
+        } else {
+          errorMsg.textContent = error.message;
+        }
       } finally {
         loadingOverlay.classList.remove('active');
       }
