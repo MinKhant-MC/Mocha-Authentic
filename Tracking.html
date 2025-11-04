@@ -21,9 +21,9 @@
       --success: #38A169;
       --warning: #DD6B20;
       --error: #E53E3E;
-      --completed: #BAC1C8;
+      --completed: #38A169;
       --current: var(--accent-pink);
-      --next: var(--accent-pink-light);
+      --next: #4A5568;
     }
 
     * {
@@ -376,7 +376,7 @@
       top: 15px;
       left: 0;
       right: 0;
-      height: 2px;
+      height: 3px;
       background-color: rgba(255, 255, 255, 0.2);
       z-index: 1;
     }
@@ -386,10 +386,11 @@
       position: absolute;
       top: 15px;
       left: 0;
-      height: 2px;
+      height: 3px;
       background: var(--accent-pink);
       z-index: 2;
-      transition: width 0.5s ease;
+      transition: width 2s ease-in-out;
+      width: 0%;
     }
 
     .step {
@@ -410,18 +411,20 @@
       align-items: center;
       margin: 0 auto;
       font-size: 13px;
-      transition: all 0.3s;
+      transition: all 0.5s ease;
       box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
     }
 
     .step.completed .step-marker {
-      background-color: var(--completed);
+      background-color: var(--success);
+      transform: scale(1.1);
     }
 
     .step.active .step-marker {
       background-color: var(--current);
-      transform: scale(1.1);
+      transform: scale(1.2);
       box-shadow: 0 0 0 3px rgba(232, 63, 111, 0.3);
+      animation: pulse 2s infinite;
     }
 
     .step.pending .step-marker {
@@ -435,6 +438,13 @@
       word-wrap: break-word;
       white-space: normal;
       color: rgba(255, 255, 255, 0.8);
+    }
+
+    .timer-display {
+      font-size: 9px;
+      color: var(--accent-pink-light);
+      margin-top: 2px;
+      font-weight: 600;
     }
 
     .status-timeline {
@@ -460,12 +470,13 @@
 
     .status-item.completed {
       background: rgba(255, 255, 255, 0.05);
-      border-left-color: var(--completed);
+      border-left-color: var(--success);
     }
 
     .status-item.active {
       border-left-color: var(--current);
       background: rgba(232, 63, 111, 0.1);
+      animation: slideIn 0.5s ease;
     }
 
     .status-item:hover {
@@ -488,13 +499,14 @@
     }
 
     .status-item.completed:before {
-      background: var(--completed);
-      border-color: var(--completed);
+      background: var(--success);
+      border-color: var(--success);
     }
 
     .status-item.active:before {
       background: var(--current);
       border-color: var(--current);
+      animation: pulse 2s infinite;
     }
 
     .status-text {
@@ -598,8 +610,25 @@
       100% { transform: translateY(0px); }
     }
 
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(-10px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
     .logo {
       animation: float 4s ease-in-out infinite;
+    }
+
+    .time-ago {
+      font-size: 11px;
+      color: var(--accent-pink-light);
+      font-weight: 500;
     }
 
     @media (max-width: 768px) {
@@ -635,6 +664,16 @@
       .order-detail-row {
         flex-direction: column;
         gap: 2px;
+      }
+
+      .status-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+      }
+
+      .status-date {
+        margin-left: 0;
       }
     }
   </style>
@@ -740,8 +779,8 @@
   </div>
 
   <script>
-    // ✅ UPDATED GOOGLE APPS SCRIPT URL - SAME AS ADMIN PAGE
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwhQskbfKW9xzRnPLgAhBcm2evIuF-7kVAUBsfnzfZeusRZo3pKrSY96f2MYm7_6Bge/exec';
+    let progressAnimationInterval;
 
     // Mobile menu toggle
     const hamburger = document.getElementById('hamburger');
@@ -752,6 +791,21 @@
       hamburger.innerHTML = navLinks.classList.contains('active') ? 
         '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
     });
+
+    // Function to calculate time ago
+    function getTimeAgo(dateString) {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      return `${diffDays}d ago`;
+    }
 
     // Function to automatically select icon based on status
     function getStatusIcon(status) {
@@ -797,7 +851,6 @@
           throw new Error('Please enter a tracking number');
         }
 
-        // ✅ FIXED: Use same URL and parameters as admin page
         const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getOrder&trackingID=${trackingNumber}`);
         
         if (!response.ok) {
@@ -810,7 +863,7 @@
           throw new Error('Tracking number not found. Please verify your number or contact support.');
         }
 
-        // ✅ FIXED: Updated column names to match Google Sheets exactly
+        // Update order information
         document.getElementById('orderNumberText').textContent = `Order #${orderData.trackingID}`;
         document.getElementById('orderStatus').textContent = orderData.currentStatus || 'Processing';
         document.getElementById('deliveryDate').textContent = orderData.estimatedDelivery || '-';
@@ -818,7 +871,7 @@
         document.getElementById('orderDetails').textContent = orderData.orderDetails || '-';
         document.getElementById('packageCount').textContent = orderData.packageCount || '-';
 
-        // Update progress visualization
+        // Update progress visualization with animation
         updateProgressVisualization(orderData);
         
         resultsContainer.style.display = 'block';
@@ -870,65 +923,79 @@
         activeStepIndex = steps.length - 1;
       }
 
-      // Create progress steps
+      // Create progress steps with animation
       steps.forEach((step, index) => {
-        const stepElement = document.createElement('div');
-        stepElement.className = 'step';
+        const stepElement = document.createElement("div");
+        stepElement.className = "step";
         
         const stepDate = new Date(step.time);
         if (currentDate >= stepDate) {
-          stepElement.classList.add('completed');
+          stepElement.classList.add("completed");
         } else if (index === activeStepIndex) {
-          stepElement.classList.add('active');
+          stepElement.classList.add("active");
         } else {
-          stepElement.classList.add('pending');
+          stepElement.classList.add("pending");
         }
 
-        const marker = document.createElement('div');
-        marker.className = 'step-marker';
+        const marker = document.createElement("div");
+        marker.className = "step-marker";
         marker.textContent = getStatusIcon(step.status);
 
-        const label = document.createElement('div');
-        label.className = 'step-label';
+        const label = document.createElement("div");
+        label.className = "step-label";
         label.textContent = step.status;
+
+        const timer = document.createElement("div");
+        timer.className = "timer-display";
+        if (index === activeStepIndex) {
+          timer.textContent = "Live";
+        } else if (currentDate >= stepDate) {
+          timer.textContent = getTimeAgo(step.time);
+        }
 
         stepElement.appendChild(marker);
         stepElement.appendChild(label);
+        stepElement.appendChild(timer);
         progressSteps.appendChild(stepElement);
       });
 
-      // Update progress bar
+      // Animate progress bar
       const progressPercent = activeStepIndex >= 0 
-        ? (activeStepIndex / (steps.length - 1)) * 100 
+        ? ((activeStepIndex + (currentDate >= new Date(steps[activeStepIndex].time) ? 1 : 0)) / steps.length) * 100 
         : 0;
-      progressFill.style.width = `${progressPercent}%`;
+      
+      // Reset and animate progress bar
+      progressFill.style.width = '0%';
+      setTimeout(() => {
+        progressFill.style.width = `${progressPercent}%`;
+      }, 100);
 
       // Create timeline (show in reverse order - newest first)
       [...steps].reverse().forEach((step, index) => {
         const actualIndex = steps.length - 1 - index;
-        const statusItem = document.createElement('div');
-        statusItem.className = 'status-item';
+        const statusItem = document.createElement("div");
+        statusItem.className = "status-item";
         
         const stepDate = new Date(step.time);
         if (currentDate >= stepDate) {
-          statusItem.classList.add('completed');
+          statusItem.classList.add("completed");
         } else if (actualIndex === activeStepIndex) {
-          statusItem.classList.add('active');
+          statusItem.classList.add("active");
         }
 
-        const statusContent = document.createElement('div');
-        statusContent.className = 'status-content';
+        const statusContent = document.createElement("div");
+        statusContent.className = "status-content";
 
-        const statusText = document.createElement('div');
-        statusText.className = 'status-text';
+        const statusText = document.createElement("div");
+        statusText.className = "status-text";
         statusText.textContent = step.status;
 
-        const statusDate = document.createElement('div');
-        statusDate.className = 'status-date';
-        statusDate.textContent = step.time;
+        const statusDate = document.createElement("div");
+        statusDate.className = "status-date";
+        statusDate.innerHTML = `${step.time}<br><span class="time-ago">${getTimeAgo(step.time)}</span>`;
 
-        const statusDetails = document.createElement('div');
-        statusDetails.className = 'status-details';
+        const statusDetails = document.createElement("div");
+        statusDetails.className = "status-details";
         statusDetails.textContent = step.details || 'No details available';
         statusDetails.style.cssText = 'display: none; margin-top: 8px; font-size: 12px; color: rgba(255,255,255,0.7);';
 
@@ -943,6 +1010,21 @@
           statusDetails.style.display = statusDetails.style.display === 'none' ? 'block' : 'none';
         });
       });
+
+      // Update timers every minute
+      if (progressAnimationInterval) {
+        clearInterval(progressAnimationInterval);
+      }
+      
+      progressAnimationInterval = setInterval(() => {
+        const timers = document.querySelectorAll('.timer-display');
+        steps.forEach((step, index) => {
+          const stepDate = new Date(step.time);
+          if (new Date() >= stepDate && timers[index]) {
+            timers[index].textContent = getTimeAgo(step.time);
+          }
+        });
+      }, 60000);
     }
 
     // Enter key support
