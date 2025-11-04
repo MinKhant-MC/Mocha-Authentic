@@ -740,8 +740,8 @@
   </div>
 
   <script>
-    // ✅ YOUR ACTUAL GOOGLE APPS SCRIPT URL
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVsKBK9ys4caY-q7uc67wxbcZQkYYdedW0eJQBuBrZp0I-XRY-_rrCmr5RQwxxXWOS/exec';
+    // ✅ UPDATED GOOGLE APPS SCRIPT URL
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwhQskbfKW9xzRnPLgAhBcm2evIuF-7kVAUBsfnzfZeusRZo3pKrSY96f2MYm7_6Bge/exec';
 
     // Mobile menu toggle
     const hamburger = document.getElementById('hamburger');
@@ -797,15 +797,16 @@
           throw new Error('Please enter a tracking number');
         }
 
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getOrder&trackingNumber=${trackingNumber}`);
+        // ✅ FIXED: Use trackingID parameter instead of trackingNumber
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getOrder&trackingID=${trackingNumber}`);
         const orderData = await response.json();
         
         if (orderData.error) {
           throw new Error('Tracking number not found. Please verify your number or contact support.');
         }
 
-        // Update order information
-        document.getElementById('orderNumberText').textContent = `Order #${orderData.trackingNumber}`;
+        // ✅ FIXED: Updated column names to match Google Sheets
+        document.getElementById('orderNumberText').textContent = `Order #${orderData.trackingID}`;
         document.getElementById('orderStatus').textContent = orderData.currentStatus || 'Processing';
         document.getElementById('deliveryDate').textContent = orderData.estimatedDelivery || '-';
         document.getElementById('customerName').textContent = orderData.customerName || '-';
