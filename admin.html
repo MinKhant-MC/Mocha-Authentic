@@ -338,8 +338,8 @@
   </div>
 
   <script>
-    // ✅ YOUR ACTUAL GOOGLE APPS SCRIPT URL
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVsKBK9ys4caY-q7uc67wxbcZQkYYdedW0eJQBuBrZp0I-XRY-_rrCmr5RQwxxXWOS/exec';
+    // ✅ UPDATED GOOGLE APPS SCRIPT URL
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynIPAdXMSS9oE89gpXIw2QmjQxdLpNYv-FB-gYy7mX1HZDa_sfXkR-p7tS2F1CnOjO/exec';
 
     function showMessage(elementId, message, isSuccess) {
       const msgElement = document.getElementById(elementId);
@@ -493,7 +493,7 @@
       const orderData = {
         trackingID: trackingID,  // Column A
         currentStatus: document.getElementById("orderStatus").value,  // Column B
-        estimatedDelivery: document.getElementById("deliveryDate").value.trim(),  // Column C (matching sheet header)
+        estimatedDelive: document.getElementById("deliveryDate").value.trim(),  // Column C (matching sheet header)
         customerName: document.getElementById("customerName").value.trim(),  // Column D
         orderDetails: document.getElementById("orderDetails").value.trim(),  // Column E
         packageCount: document.getElementById("packageCount").value.trim(),  // Column F
