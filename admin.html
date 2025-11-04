@@ -339,7 +339,7 @@
 
   <script>
     // ✅ UPDATED GOOGLE APPS SCRIPT URL
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynIPAdXMSS9oE89gpXIw2QmjQxdLpNYv-FB-gYy7mX1HZDa_sfXkR-p7tS2F1CnOjO/exec';
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwhQskbfKW9xzRnPLgAhBcm2evIuF-7kVAUBsfnzfZeusRZo3pKrSY96f2MYm7_6Bge/exec';
 
     function showMessage(elementId, message, isSuccess) {
       const msgElement = document.getElementById(elementId);
@@ -376,7 +376,7 @@
       showLoading(true);
       
       try {
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getOrder&trackingID=${trackingID}`);
+        const response = await fetch(`${https://script.google.com/macros/s/AKfycbwhQskbfKW9xzRnPLgAhBcm2evIuF-7kVAUBsfnzfZeusRZo3pKrSY96f2MYm7_6Bge/exec}?action=getOrder&trackingID=${trackingID}`);
         const result = await response.json();
         
         if (result.error) {
@@ -493,7 +493,7 @@
       const orderData = {
         trackingID: trackingID,  // Column A
         currentStatus: document.getElementById("orderStatus").value,  // Column B
-        estimatedDelive: document.getElementById("deliveryDate").value.trim(),  // Column C (matching sheet header)
+        estimatedDelivery: document.getElementById("deliveryDate").value.trim(),  // Column C (matching sheet header)
         customerName: document.getElementById("customerName").value.trim(),  // Column D
         orderDetails: document.getElementById("orderDetails").value.trim(),  // Column E
         packageCount: document.getElementById("packageCount").value.trim(),  // Column F
@@ -547,3 +547,4 @@
   </script>
 </body>
 </html>
+
